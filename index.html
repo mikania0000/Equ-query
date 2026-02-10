@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<title>盤點清冊查詢系統</title>
+<style>
+  body{
+    font-family:"微軟正黑體",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    background:#f7f7f7; margin:0; padding:30px 0;
+  }
+  .main-wrapper{ width:1200px; max-width:100%; margin:0 auto; }
+  .container{
+    background:#fff; border-radius:16px; box-shadow:0 10px 26px rgba(0,0,0,.08);
+    padding:24px 24px 32px; padding-bottom:max(32px, env(safe-area-inset-bottom));
+  }
+  h1{
+    font-size:48px; text-align:center; margin:8px 0 16px; letter-spacing:1px;
+    background:linear-gradient(90deg,#1565c0,#42a5f5); -webkit-background-clip:text;
+    background-clip:text; color:transparent; font-weight:900;
+  }
+
+  /* ===== 查詢表單 ===== */
+  .form{
+    display:grid; grid-template-columns:140px 1fr; gap:10px 14px; align-items:center;
+    margin-top:6px;
+    width:720px; max-width:100%;
+    margin-left:auto; margin-right:auto;
+  }
+  .label{
+    justify-self:end; text-align:right;
+    font-size:26px; color:#444;
+  }
+  .field{
+    display:flex; align-items:center; justify-content:center;
+  }
+  .in{
+    width:520px; max-width:100%;
+    font-size:26px; padding:10px 12px;
+    border:2px solid #cfd8dc; border-radius:10px;
+    text-align:center; outline:none; background:#fff;
+  }
+  .in:focus{ border-color:#42a5f5; box-shadow:0 0 0 4px rgba(66,165,245,.15); }
+  select.in{ height: 48px; width: 550px; }
+
+  .btn-row{
+    display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; justify-content:center;
+  }
+  .btn{
+    min-width:120px; padding:10px 14px; font-size:26px; border:none; border-radius:12px;
+    cursor:pointer; color:#fff; transition:transform .05s ease, box-shadow .2s ease;
+    box-shadow:0 4px 10px rgba(0,0,0,.1);
+  }
+  .btn:active{ transform:translateY(1px); }
+  .btn-green{ background:#2e7d32; } .btn-green:hover{ box-shadow:0 6px 16px rgba(46,125,50,.35); }
+  .btn-red{ background:#c62828; }   .btn-red:hover{ box-shadow:0 6px 16px rgba(198,40,40,.35); }
+
+  /* 小按鈕 */
+  .btn-mini{
+    font-size:18px; padding:6px 10px;
+    border:none; border-radius:10px; cursor:pointer;
+    color:#fff; margin:6px 4px;
+    box-shadow:0 4px 10px rgba(0,0,0,.1);
+  }
+  .btn-mini:active{ transform:translateY(1px); }
+  .btn-pink{ background:#ec407a; }   .btn-pink:hover{ box-shadow:0 6px 16px rgba(236,64,122,.35); }
+  .btn-yellow{ background:#f9a825; } .btn-yellow:hover{ box-shadow:0 6px 16px rgba(249,168,37,.35); }
+
+  /* ===== 結果卡 ===== */
+  .result-card{
+    margin-top:16px; background:#fffde7; border:1px solid #ffe082;
+    border-radius:12px; padding:14px; box-shadow:0 6px 18px rgba(255,193,7,.12);
+  }
+  .result-title{
+    font-size:28px; font-weight:800; color:#f57f17; margin:4px 4px 10px; letter-spacing:1px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .result-title::before{ content:""; width:10px; height:10px; border-radius:50%; background:#ffca28; }
+  .result-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .table{  min-width: 980px; width:100%; border-collapse:collapse; table-layout:fixed; font-size:20px; }
+  .table thead th{
+    background:linear-gradient(90deg,#fbc02d,#ffd54f); color:#3e2723; font-weight:800;
+    padding:10px 12px; text-align:center; font-size:18px;
+  }
+  .table td{
+    border:1px solid #ffe082; padding:10px 12px; text-align:center; vertical-align:middle;
+    word-break:break-word; white-space:normal;font-size:16px;
+  }
+  .table tbody tr:nth-child(odd){ background:#fff; }
+  .table tbody tr:nth-child(even){ background:#fffef4; }
+  
+  .table col.col-a { width: 120px; }
+  .table col.col-b { width: 240px; }
+  .table col.col-c { width: 100px; }
+  .table col.col-f { width: 120px; }
+  .table col.col-g { width: 110px; }
+  .table col.col-h { width: 100px; }
+  .table col.col-i { width: 140px; }
+  .table col.col-j { width: 140px; }
+  .table col.col-k { width: 90px;  }
+  .table col.col-l { width: 100px; }
+
+  /* 手機 RWD */
+  @media (max-width: 1000px){
+    .container{ padding-left: 10px; padding-right: 10px; border-radius: 0; }
+    .form{ grid-template-columns: 96px 1fr; width: 100%; }
+    .field{ justify-content: stretch; }
+    .in{ width: 100% !important; height: 46px; font-size: 20px; }
+    select.in{ width: 100% !important; height: 46px; }
+    .result-wrap{ overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .table{ min-width: 980px; }
+  }
+
+  /* ===== 浮動訊息 ===== */
+  .toast{
+    position:fixed; left:50%; top:60%; transform:translate(-50%,-50%);
+    padding:12px 18px; font-size:26px; color:#fff; border-radius:16px;
+    z-index:9999; opacity:0; pointer-events:none; animation:fadeInOut 3s ease forwards;
+    white-space:nowrap;
+  }
+  .toast.success{ background:#2e7d32; }
+  .toast.error{ background:#c62828; }
+  .toast.info{ background:#1565c0; }
+  @keyframes fadeInOut{
+    0%{opacity:0;transform:translate(-50%,-6px);}
+    10%{opacity:1;transform:translate(-50%,0);}
+    80%{opacity:1;}
+    100%{opacity:0;transform:translate(-50%,-6px);}
+  }
+
+  /* ===== 查詢中百分比 ===== */
+  .progress-toast{
+    position:fixed; left:50%; top:18%; transform:translateX(-50%);
+    min-width:320px; background:#0d47a1; color:#fff; border-radius:16px; padding:14px 18px;
+    z-index:10000; box-shadow:0 10px 24px rgba(0,0,0,.18); text-align:center; white-space:nowrap;
+  }
+  .progress-msg{ font-size:26px; line-height:1.25; }
+
+  @media (max-width:900px){
+    .container{ padding:16px; border-radius:12px; }
+    h1{ font-size:32px; }
+    .form{ grid-template-columns:110px 1fr; width:100%; }
+    .in{ width:100%; font-size:20px; height:46px; }
+    .progress-msg{ font-size:22px; }
+  }
+</style>
+</head>
+<body>
+<div class="main-wrapper">
+  <div class="container">
+    <h1>盤點清冊查詢系統</h1>
+
+    <!-- 查詢表單 -->
+    <section class="form" id="qryForm" aria-label="查詢條件">
+      <div class="label">編號</div>
+      <div class="field"><input id="qA" class="in" placeholder="輸入關鍵字" /></div>
+
+      <div class="label">名稱</div>
+      <div class="field"><input id="qB" class="in" placeholder="輸入關鍵字" /></div>
+
+      <div class="label">地點</div>
+      <div class="field"><input id="qI" class="in" placeholder="輸入關鍵字" /></div>
+
+      <div class="label">條碼</div>
+      <div class="field"><input id="qJ" class="in" placeholder="輸入關鍵字" /></div>
+
+      <div class="label">比對</div>
+      <div class="field">
+        <select id="qK" class="in">
+          <option value=""></option>
+        </select>
+      </div>
+    </section>
+
+    <div class="btn-row">
+      <button class="btn btn-green" id="btnQuery">🔎 查詢</button>
+      <button class="btn btn-red" id="btnClear">🧹 清除</button>
+    </div>
+
+    <!-- 結果區 -->
+    <section id="resultCard" class="result-card" style="display:none;">
+      <div class="result-title">查詢結果</div>
+      <div class="result-wrap">
+        <table id="resultTable" class="table" aria-label="查詢結果表格">
+          <colgroup>
+            <col style="width:120px;">
+            <col style="width:100px;">
+            <col style="width:60px;">
+            <col style="width:70px;">
+            <col style="width:100px;">
+            <col style="width:120px;">
+            <col style="width:100px;">
+            <col style="width:125px;">
+            <col style="width:60px;">
+            <col style="width:90px;">
+            <col style="width:120px;"> <!-- 處理 -->
+          </colgroup>
+          <thead>
+            <tr>
+              <th>編號</th><th>名稱</th><th>單位</th><th>總價</th><th>購置</th>
+              <th>年限</th><th>地點</th><th>條碼</th><th>比對</th><th>狀態</th>
+              <th>處理</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+/* ================= 設定區 ================= */
+// 請確認此網址與您的 Google Apps Script 網頁應用程式網址一致
+// 1. 確保部署類型為「網頁應用程式 (Web App)」
+// 2. 確保「擁有存取權的人 (Who has access)」設定為「所有人 (Anyone)」
+const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz9Il_sTz9LeC-eq3rWmP21FxmrpOlx0JFOLl8H--y5JWJQF4YEESjqUqk0V5QFLNGiXA/exec';
+
+/* ================= 工具：API 呼叫 ================= */
+// 取代原本的 google.script.run，改用 fetch
+async function callApi(action, params = null) {
+  try {
+    // 使用 fetch 發送 POST 請求
+    // 【重要修正】移除 headers 設定。
+    // 當 body 是字串時，瀏覽器預設會使用 text/plain，這對 GAS 來說最安全，
+    // 可以避免因為 Content-Type: application/json 或自訂 charset 而觸發 CORS Preflight (OPTIONS) 失敗。
+    const response = await fetch(GAS_API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: action, params: params }),
+      // redirect: 'follow' 是預設值，但明確寫出來有助於理解 GAS 的轉址行為
+      redirect: 'follow'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (e) {
+    console.error("API Error:", e);
+    throw e;
+  }
+}
+
+/* ===== 浮動訊息 ===== */
+function showToast(msg, type='success', ms=3000){
+  const t=document.createElement('div');
+  t.className=`toast ${type}`; t.textContent=msg;
+  document.body.appendChild(t); setTimeout(()=>t.remove(), ms);
+}
+
+/* ===== 純文字百分比 ===== */
+let _progressEl=null, _progressTimer=null, _progressPct=0;
+function _ensureProgressEl(){
+  if (_progressEl) return _progressEl;
+  const box=document.createElement('div');
+  box.className='progress-toast';
+  box.innerHTML=`<div class="progress-msg" id="progressText">查詢中…請稍後 0%</div>`;
+  document.body.appendChild(box); _progressEl=box; return box;
+}
+function _setProgress(p){ const el=_ensureProgressEl().querySelector('#progressText'); if(el) el.textContent=`查詢中…請稍後 ${p}%`; }
+function showProgress(startPct=0){
+  _ensureProgressEl(); _progressPct=Math.max(0,Math.min(100,startPct|0));
+  _setProgress(_progressPct); _progressEl.style.display='block';
+  if(_progressTimer) clearInterval(_progressTimer);
+  _progressTimer=setInterval(()=>{ if(_progressPct>=95) return;
+    const step=Math.floor(Math.random()*2)+7; _progressPct=Math.min(95,_progressPct+step); _setProgress(_progressPct);
+  },180);
+}
+function finishProgress(){ if(_progressTimer){clearInterval(_progressTimer); _progressTimer=null;}
+  if(!_progressEl) return; _progressPct=100; _setProgress(_progressPct); setTimeout(()=>{_progressEl.style.display='none';},500);
+}
+function hideProgressNow(){ if(_progressTimer){clearInterval(_progressTimer); _progressTimer=null;} if(_progressEl) _progressEl.style.display='none'; }
+
+/* ===== DOM ===== */
+const qA=document.getElementById('qA');
+const qB=document.getElementById('qB');
+const qI=document.getElementById('qI');
+const qJ=document.getElementById('qJ');
+const qK=document.getElementById('qK');
+const btnQuery=document.getElementById('btnQuery');
+const resultCard=document.getElementById('resultCard');
+const resultBody=document.querySelector('#resultTable tbody');
+
+/* ===== 功能 ===== */
+function clearFormAndResult(){
+  qA.value=''; qB.value=''; qI.value=''; qJ.value=''; qK.value='';
+  resultBody.innerHTML=''; resultCard.style.display='none';
+}
+
+function _allEmpty(){
+  return ![qA,qB,qI,qJ].some(el => (el.value||'').trim()) && !(qK.value||'').trim();
+}
+
+function renderRows(rows){
+  resultBody.innerHTML='';
+  if(!rows || rows.length===0){
+    resultCard.style.display='none';
+    showToast('沒有符合的資料', 'info', 1800);
+    return;
+  }
+  rows.forEach(r=>{
+    const tr=document.createElement('tr');
+    // 依序：A,B,C,F,G,H,I,J,K,L
+    ['A','B','C','F','G','H','I','J','K','L'].forEach(k=>{
+      const td=document.createElement('td');
+      td.textContent=r[k]??'';
+      tr.appendChild(td);
+    });
+
+    // 處理欄
+    const tdAct=document.createElement('td');
+    tdAct.innerHTML = `
+      <button class="btn-mini btn-pink"   onclick="doDiscard('${r.J}')">報廢</button>
+      <button class="btn-mini btn-yellow" onclick="undoDiscard('${r.J}')">取消</button>
+    `;
+    tr.appendChild(tdAct);
+
+    resultBody.appendChild(tr);
+  });
+  resultCard.style.display='block';
+}
+
+/* 查詢功能 (改用 callApi) */
+async function runQuery(){
+  if (_allEmpty()){
+    showToast('⛔ 請至少輸入／選擇一個查詢條件', 'error', 2200);
+    qA.focus();
+    return;
+  }
+
+  resultBody.innerHTML=''; resultCard.style.display='none';
+  showProgress(0); btnQuery.disabled=true; btnQuery.style.opacity=.7;
+
+  const payload={
+    A:(qA.value||'').trim(),
+    B:(qB.value||'').trim(),
+    I:(qI.value||'').trim(),
+    J:(qJ.value||'').trim(),
+    K:(qK.value||'').trim()
+  };
+
+  try {
+    const res = await callApi('searchAssets', payload);
+    finishProgress();
+    renderRows(res && res.rows || []);
+  } catch (err) {
+    console.error(err);
+    finishProgress();
+    // 顯示更詳細的錯誤建議
+    showToast('查詢失敗：請檢查網路或 GAS 部署權限 (所有人)', 'error', 3000);
+  } finally {
+    btnQuery.disabled=false; btnQuery.style.opacity=1;
+  }
+}
+
+/* ===== 事件 ===== */
+btnQuery.addEventListener('click', runQuery);
+document.getElementById('btnClear').addEventListener('click', ()=>{
+  hideProgressNow(); clearFormAndResult(); showToast('🧹 已清除', 'success', 1500);
+});
+[qA,qB,qI,qJ].forEach(el=>{
+  el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); runQuery(); }});
+});
+
+/* 輔助：找行 */
+function _findRowByBarcode(barcode){
+  const rows = Array.from(resultBody.querySelectorAll('tr'));
+  // 顯示欄序：0:A ... 7:J(條碼) 8:K(比對) 9:L(狀態)
+  return rows.find(tr => (tr.children[7]?.textContent || '') === barcode) || null;
+}
+
+/* 報廢功能 (改用 callApi) */
+async function doDiscard(barcode){
+  const tr=_findRowByBarcode(barcode);
+  if(!tr){ showToast('找不到該筆資料', 'error', 1800); return; }
+  const kCell = tr.children[8]; 
+  const kVal  = (kCell.textContent||'').trim();
+
+  if(kVal === '1'){ showToast('已進入報廢', 'info', 1800); return; }
+
+  showProgress(0);
+  
+  try {
+    const res = await callApi('markDiscard', barcode);
+    finishProgress();
+    if(res && res.ok){
+      tr.children[8].textContent = res.K ?? '1';
+      tr.children[9].textContent = res.L ?? '報廢';
+      showToast('📌 已標記報廢', 'success', 1600);
+    } else if(res && res.already){
+      showToast('已進入報廢', 'info', 1800);
+    } else {
+      showToast('處理失敗', 'error', 2000);
+    }
+  } catch (err) {
+    console.error(err);
+    finishProgress();
+    showToast('連線錯誤', 'error', 2000);
+  }
+}
+
+/* 取消報廢功能 (改用 callApi) */
+async function undoDiscard(barcode){
+  const tr=_findRowByBarcode(barcode);
+  if(!tr){ showToast('找不到該筆資料', 'error', 1800); return; }
+  const kCell = tr.children[8];
+  const kVal  = (kCell.textContent||'').trim();
+
+  if(kVal === '0' || kVal === ''){ showToast('此設備沒有報廢', 'info', 1800); return; }
+
+  showProgress(0);
+  
+  try {
+    const res = await callApi('cancelDiscard', barcode);
+    finishProgress();
+    if(res && res.ok){
+      tr.children[8].textContent = res.K ?? '0';
+      tr.children[9].textContent = res.L ?? '使用中';
+      showToast('↩️ 已取消報廢', 'success', 1600);
+    } else if(res && res.notFound){
+      showToast('此設備沒有報廢', 'info', 1800);
+    } else {
+      showToast('處理失敗', 'error', 2000);
+    }
+  } catch(err) {
+    console.error(err);
+    finishProgress();
+    showToast('連線錯誤', 'error', 2000);
+  }
+}
+
+/* 初始化：載入下拉 (改用 callApi) */
+async function loadCompareOptions(){
+  try {
+    const res = await callApi('getCompareOptions');
+    const list=(res && res.options)||[];
+    qK.innerHTML='<option value=""></option>' + list.map(v=>`<option value="${v}">${v}</option>`).join('');
+  } catch(e) {
+    console.log("載入下拉失敗，忽略", e);
+    // 這裡我們不彈出錯誤，避免一開畫面就報錯，只在 Console 留紀錄
+  }
+}
+
+window.addEventListener('load', ()=>{ loadCompareOptions(); qA.focus(); });
+</script>
+</body>
+</html>
