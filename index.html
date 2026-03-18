@@ -10,152 +10,270 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-  body{
-    font-family:"微軟正黑體",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-    background:#f7f7f7; margin:0; padding:30px 0;
+  :root {
+    --primary-color: #1565c0;
+    --secondary-color: #42a5f5;
+    --success-color: #2e7d32;
+    --danger-color: #c62828;
+    --bg-color: #f7f7f7;
   }
-  .main-wrapper{ width:1200px; max-width:100%; margin:0 auto; }
-  .container{
-    background:#fff; border-radius:16px; box-shadow:0 10px 26px rgba(0,0,0,.08);
-    padding:24px 24px 32px; padding-bottom:max(32px, env(safe-area-inset-bottom));
+
+  body {
+    font-family: "微軟正黑體", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background: var(--bg-color);
+    margin: 0;
+    padding: 30px 0;
   }
-  h1{
-    font-size:48px; text-align:center; margin:8px 0 4px; letter-spacing:1px;
-    background:linear-gradient(90deg,#1565c0,#42a5f5); -webkit-background-clip:text;
-    background-clip:text; color:transparent; font-weight:900;
+
+  .main-wrapper {
+    width: 1200px;
+    max-width: 100%;
+    margin: 0 auto;
   }
+
+  .container {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 10px 26px rgba(0,0,0,.08);
+    padding: 24px 24px 32px;
+    padding-bottom: max(32px, env(safe-area-inset-bottom));
+  }
+
+  h1 {
+    font-size: 48px;
+    text-align: center;
+    margin: 8px 0 4px;
+    letter-spacing: 1px;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-weight: 900;
+  }
+
   .version-tag {
     text-align: center;
     font-size: 14px;
     color: #999;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     font-family: monospace;
   }
 
-  /* ===== 查詢表單 ===== */
-  .form{
-    display:grid; grid-template-columns:140px 1fr; gap:10px 14px; align-items:center;
-    margin-top:6px;
-    width:720px; max-width:100%;
-    margin-left:auto; margin-right:auto;
-  }
-  .label{
-    justify-self:end; text-align:right;
-    font-size:26px; color:#444;
-  }
-  .field{
-    display:flex; align-items:center; justify-content:center;
-  }
-  .in{
-    width:520px; max-width:100%;
-    font-size:26px; padding:10px 12px;
-    border:2px solid #cfd8dc; border-radius:10px;
-    text-align:center; outline:none; background:#fff;
-  }
-  .in:focus{ border-color:#42a5f5; box-shadow:0 0 0 4px rgba(66,165,245,.15); }
-  select.in{ height: 48px; width: 550px; }
-
-  .btn-row{
-    display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; justify-content:center;
-  }
-  .btn{
-    min-width:120px; padding:10px 14px; font-size:26px; border:none; border-radius:12px;
-    cursor:pointer; color:#fff; transition:transform .05s ease, box-shadow .2s ease;
-    box-shadow:0 4px 10px rgba(0,0,0,.1);
-  }
-  .btn:active{ transform:translateY(1px); }
-  .btn-green{ background:#2e7d32; } .btn-green:hover{ box-shadow:0 6px 16px rgba(46,125,50,.35); }
-  .btn-red{ background:#c62828; }   .btn-red:hover{ box-shadow:0 6px 16px rgba(198,40,40,.35); }
-
-  /* 小按鈕 */
-  .btn-mini{
-    font-size:18px; padding:6px 10px;
-    border:none; border-radius:10px; cursor:pointer;
-    color:#fff; margin:6px 4px;
-    box-shadow:0 4px 10px rgba(0,0,0,.1);
-  }
-  .btn-mini:active{ transform:translateY(1px); }
-  .btn-pink{ background:#ec407a; }   .btn-pink:hover{ box-shadow:0 6px 16px rgba(236,64,122,.35); }
-  .btn-yellow{ background:#f9a825; } .btn-yellow:hover{ box-shadow:0 6px 16px rgba(249,168,37,.35); }
-
-  /* ===== 結果卡 ===== */
-  .result-card{
-    margin-top:16px; background:#fffde7; border:1px solid #ffe082;
-    border-radius:12px; padding:14px; box-shadow:0 6px 18px rgba(255,193,7,.12);
-  }
-  .result-title{
-    font-size:28px; font-weight:800; color:#f57f17; margin:4px 4px 10px; letter-spacing:1px;
-    display:flex; align-items:center; gap:8px;
-  }
-  .result-title::before{ content:""; width:10px; height:10px; border-radius:50%; background:#ffca28; }
-  .result-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
-  .table{  min-width: 980px; width:100%; border-collapse:collapse; table-layout:fixed; font-size:20px; }
-  .table thead th{
-    background:linear-gradient(90deg,#fbc02d,#ffd54f); color:#3e2723; font-weight:800;
-    padding:10px 12px; text-align:center; font-size:18px;
-  }
-  .table td{
-    border:1px solid #ffe082; padding:10px 12px; text-align:center; vertical-align:middle;
-    word-break:break-word; white-space:normal;font-size:16px;
-  }
-  .table tbody tr:nth-child(odd){ background:#fff; }
-  .table tbody tr:nth-child(even){ background:#fffef4; }
-  
-  .table col.col-a { width: 120px; }
-  .table col.col-b { width: 240px; }
-  .table col.col-c { width: 100px; }
-  .table col.col-f { width: 120px; }
-  .table col.col-g { width: 110px; }
-  .table col.col-h { width: 100px; }
-  .table col.col-i { width: 140px; }
-  .table col.col-j { width: 140px; }
-  .table col.col-k { width: 90px;  }
-  .table col.col-l { width: 100px; }
-
-  /* ===== 登入遮罩 ===== */
+  /* ===== 登入遮罩 Overlay ===== */
   #loginOverlay {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(8px);
-    z-index: 99999; /* 最上層 */
+    backdrop-filter: blur(10px);
+    z-index: 99999;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
   }
+
   .login-box {
     background: #fff;
     padding: 40px;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    border-radius: 20px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
     text-align: center;
-  }
-  .login-box h2 {
-    margin-top: 0;
-    color: #1565c0;
-    margin-bottom: 10px;
-  }
-  .login-box p {
-    color: #555;
-    margin-bottom: 24px;
+    width: 380px;
+    max-width: 90%;
   }
 
-  /* 手機 RWD */
-  @media (max-width: 1000px){
-    .container{ padding-left: 10px; padding-right: 10px; border-radius: 0; }
-    .form{ grid-template-columns: 96px 1fr; width: 100%; }
-    .field{ justify-content: stretch; }
-    .in{ width: 100% !important; height: 46px; font-size: 20px; }
-    select.in{ width: 100% !important; height: 46px; }
-    .result-wrap{ overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .table{ min-width: 980px; }
+  .login-box h2 {
+    margin-top: 0;
+    color: var(--primary-color);
+    margin-bottom: 10px;
   }
-  @media (max-width:900px){
-    .container{ padding:16px; border-radius:12px; }
-    h1{ font-size:32px; }
-    .form{ grid-template-columns:110px 1fr; width:100%; }
-    .in{ width:100%; font-size:20px; height:46px; }
+
+  .login-box p {
+    color: #666;
+    font-size: 15px;
+    margin-bottom: 20px;
+  }
+
+  .auth-step {
+    background: #f9f9f9;
+    border: 1px solid #eee;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+  }
+
+  .google-btn-wrapper {
+    display: flex;
+    justify-content: center;
+    margin: 10px 0;
+  }
+
+  #googleEmailShow {
+    font-size: 14px;
+    font-weight: bold;
+    color: #d32f2f;
+    margin-top: 5px;
+  }
+
+  .login-box input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    font-size: 18px;
+    text-align: center;
+    box-sizing: border-box;
+    outline: none;
+  }
+
+  .login-box input[type="password"]:focus {
+    border-color: var(--secondary-color);
+  }
+
+  .btn-auth-submit {
+    width: 100%;
+    padding: 14px;
+    background: var(--primary-color);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+
+  .btn-auth-submit:hover {
+    background: #0d47a1;
+  }
+
+  /* ===== 查詢表單 ===== */
+  .form {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 10px 14px;
+    align-items: center;
+    margin-top: 6px;
+    width: 720px;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .label {
+    justify-self: end;
+    text-align: right;
+    font-size: 26px;
+    color: #444;
+  }
+
+  .in {
+    width: 100%;
+    max-width: 520px;
+    font-size: 26px;
+    padding: 10px 12px;
+    border: 2px solid #cfd8dc;
+    border-radius: 10px;
+    text-align: center;
+    outline: none;
+    background: #fff;
+    box-sizing: border-box;
+  }
+
+  .in:focus {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 4px rgba(66,165,245,.15);
+  }
+
+  select.in { height: 54px; }
+
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn {
+    min-width: 140px;
+    padding: 12px 20px;
+    font-size: 26px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    color: #fff;
+    transition: transform .05s ease, box-shadow .2s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+
+  .btn:active { transform: translateY(1px); }
+  .btn-green { background: var(--success-color); }
+  .btn-red { background: var(--danger-color); }
+
+  /* ===== 結果卡片 ===== */
+  .result-card {
+    margin-top: 20px;
+    background: #fffde7;
+    border: 1px solid #ffe082;
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 6px 18px rgba(255,193,7,.12);
+    display: none;
+  }
+
+  .result-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: #f57f17;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .result-wrap { overflow-x: auto; }
+
+  .table {
+    width: 100%;
+    min-width: 1000px;
+    border-collapse: collapse;
+    font-size: 18px;
+  }
+
+  .table th {
+    background: linear-gradient(90deg, #fbc02d, #ffd54f);
+    color: #3e2723;
+    padding: 12px;
+    border: 1px solid #ffe082;
+  }
+
+  .table td {
+    border: 1px solid #ffe082;
+    padding: 10px;
+    text-align: center;
+    background: #fff;
+  }
+
+  .btn-mini {
+    padding: 6px 12px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    margin: 2px;
+  }
+
+  .btn-pink { background: #ec407a; }
+  .btn-yellow { background: #f9a825; }
+
+  @media (max-width: 900px) {
+    h1 { font-size: 32px; }
+    .form { grid-template-columns: 100px 1fr; }
+    .label { font-size: 20px; }
+    .in { font-size: 20px; }
+    .btn { font-size: 20px; min-width: 110px; }
   }
 </style>
 </head>
@@ -164,23 +282,29 @@
 <!-- 登入遮罩 -->
 <div id="loginOverlay">
   <div class="login-box">
-    <h2>盤點系統登入</h2>
-    <p>請使用有權限的 Google 帳號登入系統</p>
-    <!-- Google 登入按鈕容器 -->
-    <div id="g_id_onload"
-         data-client_id="YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com"
-         data-context="signin"
-         data-ux_mode="popup"
-         data-callback="handleCredentialResponse"
-         data-auto_prompt="false">
+    <h2>系統安全驗證</h2>
+    <p>請完成以下步驟以訪問系統</p>
+    
+    <div class="auth-step">
+      <strong>步驟 1: Google 帳號認證</strong>
+      <div class="google-btn-wrapper">
+        <!-- ⚠️ 注意：請將 data-client_id 替換成你在 Google Cloud Console 申請的 Client ID -->
+        <div id="g_id_onload"
+             data-client_id="請換成你的Google_Client_ID.apps.googleusercontent.com"
+             data-context="signin"
+             data-ux_mode="popup"
+             data-callback="onGoogleSignIn"
+             data-auto_prompt="false">
+        </div>
+        <div class="g_id_signin" data-type="standard" data-shape="rectangular" data-theme="outline" data-text="signin_with" data-size="large"></div>
+      </div>
+      <div id="googleEmailShow">尚未選取帳號</div>
     </div>
-    <div class="g_id_signin"
-         data-type="standard"
-         data-shape="rectangular"
-         data-theme="outline"
-         data-text="signin_with"
-         data-size="large"
-         data-logo_alignment="left">
+
+    <div class="auth-step">
+      <strong>步驟 2: 管理員密碼</strong>
+      <input type="password" id="loginPassword" placeholder="請輸入密碼">
+      <button class="btn-auth-submit" onclick="submitDualAuth()">確認登入</button>
     </div>
   </div>
 </div>
@@ -188,21 +312,20 @@
 <div class="main-wrapper">
   <div class="container">
     <h1>盤點清冊查詢系統</h1>
-    <div class="version-tag">Version 1.1.0</div>
+    <div class="version-tag">Version 1.2.0</div>
 
-    <!-- 查詢表單 -->
-    <section class="form" id="qryForm" aria-label="查詢條件">
+    <section class="form">
       <div class="label">編號</div>
-      <div class="field"><input id="qA" class="in" placeholder="輸入關鍵字" /></div>
+      <div class="field"><input id="qA" class="in" placeholder="關鍵字"></div>
 
       <div class="label">名稱</div>
-      <div class="field"><input id="qB" class="in" placeholder="輸入關鍵字" /></div>
+      <div class="field"><input id="qB" class="in" placeholder="關鍵字"></div>
 
       <div class="label">地點</div>
-      <div class="field"><input id="qI" class="in" placeholder="輸入關鍵字" /></div>
+      <div class="field"><input id="qI" class="in" placeholder="關鍵字"></div>
 
       <div class="label">條碼</div>
-      <div class="field"><input id="qJ" class="in" placeholder="輸入關鍵字" /></div>
+      <div class="field"><input id="qJ" class="in" placeholder="條碼號"></div>
 
       <div class="label">比對</div>
       <div class="field">
@@ -213,28 +336,14 @@
     </section>
 
     <div class="btn-row">
-      <button class="btn btn-green" id="btnQuery">🔎 查詢</button>
-      <button class="btn btn-red" id="btnClear">🧹 清除</button>
+      <button class="btn btn-green" onclick="runQuery()">🔎 查詢</button>
+      <button class="btn btn-red" onclick="clearForm()">🧹 清除</button>
     </div>
 
-    <!-- 結果區 -->
-    <section id="resultCard" class="result-card" style="display:none;">
+    <section id="resultCard" class="result-card">
       <div class="result-title">查詢結果</div>
       <div class="result-wrap">
-        <table id="resultTable" class="table" aria-label="查詢結果表格">
-          <colgroup>
-            <col style="width:120px;">
-            <col style="width:100px;">
-            <col style="width:60px;">
-            <col style="width:70px;">
-            <col style="width:100px;">
-            <col style="width:120px;">
-            <col style="width:100px;">
-            <col style="width:125px;">
-            <col style="width:60px;">
-            <col style="width:90px;">
-            <col style="width:120px;"> <!-- 處理 -->
-          </colgroup>
+        <table class="table" id="resultTable">
           <thead>
             <tr>
               <th>編號</th><th>名稱</th><th>單位</th><th>總價</th><th>購置</th>
@@ -250,56 +359,82 @@
 </div>
 
 <script>
-/* ================= 設定區 ================= */
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com'; // ★ 請填入你的 Client ID
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz9Il_sTz9LeC-eq3rWmP21FxmrpOlx0JFOLl8H--y5JWJQF4YEESjqUqk0V5QFLNGiXA/exec';
-const AUTH_API_URL = 'https://script.google.com/macros/s/AKfycbxBnPl_7XPedBwlk4pL3jYHwXteRd2SNegY24QLp6jGVvxCQDgRTXTu1XhF2rcaGh_mIw/exec';
+/* ================= 系統設定 ================= */
+// 已填寫你原本程式碼提供的 GAS API (授權、搜尋等功能已整併在此)
+const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz9Il_sTz9LeC-eq3rWmP21FxmrpOlx0JFOLl8H--y5JWJQF4YEESjqUqk0V5QFLNGiXA/exec'; 
 
-/* ================= 雙認證與白名單邏輯 ================= */
-function decodeJwtResponse(token) {
-  let base64Url = token.split('.')[1];
-  let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-  let jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-  }).join(''));
-  return JSON.parse(jsonPayload);
-}
+let tempEmail = null; // 暫存 Google 回傳的 Email
 
-async function handleCredentialResponse(response) {
-  const responsePayload = decodeJwtResponse(response.credential);
-  const userEmail = responsePayload.email;
+/* ================= 網頁載入與驗證邏輯 ================= */
 
-  Swal.fire({
-    title: '身分驗證中',
-    text: `正在驗證 ${userEmail}...`,
-    allowOutsideClick: false,
-    didOpen: () => { Swal.showLoading(); }
-  });
+// 1. 頁面載入時檢查本地登入狀態
+window.onload = function() {
+  const isAuth = localStorage.getItem('inventory_auth_success');
+  if (isAuth === 'true') {
+    // 已經登入過，隱藏遮罩並載入下拉選單
+    document.getElementById('loginOverlay').style.display = 'none';
+    loadCompareOptions();
+  }
+};
 
+// 2. Google 登入回呼 (解析 JWT)
+function onGoogleSignIn(response) {
   try {
-    const authRes = await fetch(AUTH_API_URL, {
-      method: 'POST',
-      body: JSON.stringify({ action: "verifyLogin", email: userEmail }),
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      redirect: 'follow'
-    });
-    
-    const data = await authRes.json();
-
-    if (data.status === 'success' && data.authorized === true) {
-      Swal.fire({ icon: 'success', title: '登入成功', timer: 1500, showConfirmButton: false });
-      document.getElementById('loginOverlay').style.display = 'none';
-      loadCompareOptions();
-      qA.focus();
-    } else {
-      Swal.fire({ icon: 'error', title: '權限不足', text: '您不在白名單中，無權訪問。' });
-    }
-  } catch (error) {
-    Swal.fire({ icon: 'error', title: '網路錯誤', text: '無法連接驗證伺服器。' });
+    const payload = JSON.parse(atob(response.credential.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    tempEmail = payload.email;
+    document.getElementById('googleEmailShow').innerText = "已選取: " + tempEmail;
+    document.getElementById('googleEmailShow').style.color = "#2e7d32";
+    showToast('Google 認證成功，請輸入密碼', 'success');
+  } catch(e) {
+    Swal.fire('錯誤', 'Google 登入解析失敗', 'error');
   }
 }
 
-/* ================= 工具：API 呼叫 ================= */
+// 3. 送出雙重驗證 (Email + 密碼)
+async function submitDualAuth() {
+  const pwd = document.getElementById('loginPassword').value;
+  if (!tempEmail) {
+    Swal.fire('提示', '請先完成步驟 1: Google 帳號認證', 'warning');
+    return;
+  }
+  if (!pwd) {
+    Swal.fire('提示', '請輸入步驟 2 的管理員密碼', 'warning');
+    return;
+  }
+
+  Swal.fire({ title: '雙重驗證中...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+  try {
+    const res = await fetch(GAS_API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'verifyLogin', params: { email: tempEmail, password: pwd } }),
+      redirect: 'follow'
+    });
+    
+    if (!res.ok) throw new Error("伺服器回應異常");
+    const data = await res.json();
+
+    if (data.status === 'success' && data.authorized) {
+      // 驗證成功，儲存狀態至 LocalStorage
+      localStorage.setItem('inventory_auth_success', 'true');
+      localStorage.setItem('inventory_user', tempEmail);
+      
+      Swal.fire({ icon: 'success', title: '驗證通過', timer: 1500, showConfirmButton: false });
+      document.getElementById('loginOverlay').style.display = 'none';
+      loadCompareOptions();
+    } else {
+      Swal.fire('驗證失敗', data.message || '帳號或密碼錯誤', 'error');
+    }
+  } catch (e) {
+    console.error(e);
+    Swal.fire('連線錯誤', '無法連接驗證伺服器', 'error');
+  }
+}
+
+
+/* ================= 系統主要功能邏輯 ================= */
+
+// 共用呼叫 API
 async function callApi(action, params = null) {
   try {
     const response = await fetch(GAS_API_URL, {
@@ -314,97 +449,120 @@ async function callApi(action, params = null) {
   }
 }
 
-function showToast(msg, type='success'){
-  Swal.fire({
-    toast: true, position: 'top-end', icon: type, title: msg,
-    showConfirmButton: false, timer: 2000, timerProgressBar: true
-  });
+function showToast(msg, icon='success') {
+  Swal.fire({ toast: true, position: 'top-end', icon: icon, title: msg, showConfirmButton: false, timer: 2000 });
 }
 
-function showProgress(msg = '處理中...'){
-  Swal.fire({ title: msg, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+function showProgress(msg = '處理中...') {
+  Swal.fire({ title: msg, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 }
 
-function finishProgress(){ Swal.close(); }
+function finishProgress() { Swal.close(); }
 
-/* ===== DOM & 功能 ===== */
-const qA=document.getElementById('qA');
-const qB=document.getElementById('qB');
-const qI=document.getElementById('qI');
-const qJ=document.getElementById('qJ');
-const qK=document.getElementById('qK');
-const btnQuery=document.getElementById('btnQuery');
-const resultCard=document.getElementById('resultCard');
-const resultBody=document.querySelector('#resultTable tbody');
-
-function clearFormAndResult(){
-  qA.value=''; qB.value=''; qI.value=''; qJ.value=''; qK.value='';
-  resultBody.innerHTML=''; resultCard.style.display='none';
+// 清除表單
+function clearForm() {
+  ['qA','qB','qI','qJ','qK'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('resultCard').style.display = 'none';
+  document.querySelector('#resultTable tbody').innerHTML = '';
+  showToast('已清除條件');
 }
 
-async function runQuery(){
-  if (![qA,qB,qI,qJ,qK].some(el => (el.value||'').trim())){
-    showToast('請輸入查詢條件', 'error'); return;
+// 執行查詢
+async function runQuery() {
+  const payload = {
+    A: document.getElementById('qA').value.trim(),
+    B: document.getElementById('qB').value.trim(),
+    I: document.getElementById('qI').value.trim(),
+    J: document.getElementById('qJ').value.trim(),
+    K: document.getElementById('qK').value.trim()
+  };
+
+  if (!payload.A && !payload.B && !payload.I && !payload.J && !payload.K) {
+    Swal.fire('提示', '請至少輸入一個查詢條件', 'warning');
+    return;
   }
+
   showProgress('資料查詢中...');
   try {
-    const res = await callApi('searchAssets', {
-      A:qA.value.trim(), B:qB.value.trim(), I:qI.value.trim(), J:qJ.value.trim(), K:qK.value.trim()
-    });
-    renderRows(res?.rows || []);
-  } catch (err) { Swal.fire('查詢失敗', '連線異常', 'error'); }
-  finally { finishProgress(); }
+    const res = await callApi('searchAssets', payload);
+    finishProgress();
+    renderRows(res.rows || []);
+  } catch (err) {
+    finishProgress();
+    Swal.fire('查詢失敗', '無法連接伺服器或發生錯誤', 'error');
+  }
 }
 
-function renderRows(rows){
-  resultBody.innerHTML='';
-  if(!rows.length){ resultCard.style.display='none'; showToast('沒有符合資料', 'info'); return; }
-  rows.forEach(r=>{
-    const tr=document.createElement('tr');
-    ['A','B','C','F','G','H','I','J','K','L'].forEach(k=>{
-      const td=document.createElement('td'); td.textContent=r[k]??''; tr.appendChild(td);
+// 渲染表格資料
+function renderRows(rows) {
+  const tbody = document.querySelector('#resultTable tbody');
+  tbody.innerHTML = '';
+  
+  if (!rows || rows.length === 0) {
+    document.getElementById('resultCard').style.display = 'none';
+    Swal.fire('查無資料', '找不到符合條件的資產', 'info');
+    return;
+  }
+  
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    ['A','B','C','F','G','H','I','J','K','L'].forEach(k => {
+      const td = document.createElement('td');
+      td.textContent = r[k] ?? '';
+      tr.appendChild(td);
     });
-    const tdAct=document.createElement('td');
+
+    const tdAct = document.createElement('td');
     tdAct.innerHTML = `
-      <button class="btn-mini btn-pink" onclick="doDiscard('${r.J}')">報廢</button>
-      <button class="btn-mini btn-yellow" onclick="undoDiscard('${r.J}')">取消</button>
+      <button class="btn-mini btn-pink" onclick="doAction('${r.J}', 'markDiscard')">報廢</button>
+      <button class="btn-mini btn-yellow" onclick="doAction('${r.J}', 'cancelDiscard')">取消</button>
     `;
     tr.appendChild(tdAct);
-    resultBody.appendChild(tr);
+    tbody.appendChild(tr);
   });
-  resultCard.style.display='block';
+  
+  document.getElementById('resultCard').style.display = 'block';
 }
 
-async function doDiscard(barcode){
+// 報廢與取消報廢共用函式
+async function doAction(barcode, action) {
   showProgress('處理中...');
   try {
-    const res = await callApi('markDiscard', { barcode });
-    if(res?.ok) { showToast('已標記報廢'); runQuery(); }
-    else showToast('處理失敗', 'error');
-  } catch(e) { Swal.fire('錯誤', '連線失敗', 'error'); }
-  finally { finishProgress(); }
+    const res = await callApi(action, { barcode: barcode });
+    finishProgress();
+    if (res && res.ok) {
+      showToast('處理成功');
+      runQuery(); // 重新整理表格
+    } else if (res && res.already) {
+      showToast('此設備已進入報廢流程', 'info');
+    } else if (res && res.notFound) {
+      showToast('操作無效，可能狀態不符', 'warning');
+    } else {
+      Swal.fire('處理失敗', res.message || '發生未知錯誤', 'error');
+    }
+  } catch (err) {
+    finishProgress();
+    Swal.fire('連線錯誤', '無法連接伺服器', 'error');
+  }
 }
 
-async function undoDiscard(barcode){
-  showProgress('處理中...');
-  try {
-    const res = await callApi('cancelDiscard', { barcode });
-    if(res?.ok) { showToast('已取消報廢'); runQuery(); }
-    else showToast('處理失敗', 'error');
-  } catch(e) { Swal.fire('錯誤', '連線失敗', 'error'); }
-  finally { finishProgress(); }
-}
-
-async function loadCompareOptions(){
+// 載入下拉選單 (比對狀態)
+async function loadCompareOptions() {
   try {
     const res = await callApi('getCompareOptions');
-    qK.innerHTML='<option value=""></option>' + (res?.options||[]).map(v=>`<option value="${v}">${v}</option>`).join('');
-  } catch(e) {}
+    const sel = document.getElementById('qK');
+    sel.innerHTML = '<option value=""></option>' + (res.options || []).map(o => `<option value="${o}">${o}</option>`).join('');
+  } catch (e) {
+    console.log('載入選單失敗', e);
+  }
 }
 
-btnQuery.addEventListener('click', runQuery);
-document.getElementById('btnClear').addEventListener('click', clearFormAndResult);
-[qA,qB,qI,qJ].forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')runQuery();}));
+// 綁定 Enter 快捷鍵搜尋
+['qA','qB','qI','qJ'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') runQuery();
+  });
+});
 </script>
 </body>
 </html>
