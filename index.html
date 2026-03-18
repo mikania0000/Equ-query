@@ -20,9 +20,16 @@
     padding:24px 24px 32px; padding-bottom:max(32px, env(safe-area-inset-bottom));
   }
   h1{
-    font-size:48px; text-align:center; margin:8px 0 16px; letter-spacing:1px;
+    font-size:48px; text-align:center; margin:8px 0 4px; letter-spacing:1px;
     background:linear-gradient(90deg,#1565c0,#42a5f5); -webkit-background-clip:text;
     background-clip:text; color:transparent; font-weight:900;
+  }
+  .version-tag {
+    text-align: center;
+    font-size: 14px;
+    color: #999;
+    margin-bottom: 16px;
+    font-family: monospace;
   }
 
   /* ===== 查詢表單 ===== */
@@ -181,6 +188,7 @@
 <div class="main-wrapper">
   <div class="container">
     <h1>盤點清冊查詢系統</h1>
+    <div class="version-tag">Version 1.1.0</div>
 
     <!-- 查詢表單 -->
     <section class="form" id="qryForm" aria-label="查詢條件">
@@ -244,11 +252,10 @@
 <script>
 /* ================= 設定區 ================= */
 const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com'; // ★ 請填入你的 Client ID
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz9Il_sTz9LeC-eq3rWmP21FxmrpOlx0JFOLl8H--y5JWJQF4YEESjqUqk0V5QFLNGiXA/exec'; // 原本查詢的 API
-const AUTH_API_URL = 'https://script.google.com/macros/s/AKfycbxBnPl_7XPedBwlk4pL3jYHwXteRd2SNegY24QLp6jGVvxCQDgRTXTu1XhF2rcaGh_mIw/exec'; // 驗證白名單的 API
+const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz9Il_sTz9LeC-eq3rWmP21FxmrpOlx0JFOLl8H--y5JWJQF4YEESjqUqk0V5QFLNGiXA/exec';
+const AUTH_API_URL = 'https://script.google.com/macros/s/AKfycbxBnPl_7XPedBwlk4pL3jYHwXteRd2SNegY24QLp6jGVvxCQDgRTXTu1XhF2rcaGh_mIw/exec';
 
 /* ================= 雙認證與白名單邏輯 ================= */
-// 1. 解析 Google 回傳的 JWT Token 以取得 Email
 function decodeJwtResponse(token) {
   let base64Url = token.split('.')[1];
   let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -258,19 +265,15 @@ function decodeJwtResponse(token) {
   return JSON.parse(jsonPayload);
 }
 
-// 2. Google 登入完成後的回呼函式
 async function handleCredentialResponse(response) {
   const responsePayload = decodeJwtResponse(response.credential);
   const userEmail = responsePayload.email;
 
-  // 顯示驗證中的 SweetAlert2 動畫
   Swal.fire({
     title: '身分驗證中',
-    text: `正在驗證 ${userEmail} 是否具有權限...`,
+    text: `正在驗證 ${userEmail}...`,
     allowOutsideClick: false,
-    didOpen: () => {
-      Swal.showLoading();
-    }
+    didOpen: () => { Swal.showLoading(); }
   });
 
   try {
@@ -280,46 +283,21 @@ async function handleCredentialResponse(response) {
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       redirect: 'follow'
     });
-
-    if (!authRes.ok) throw new Error("驗證伺服器無回應");
     
     const data = await authRes.json();
 
     if (data.status === 'success' && data.authorized === true) {
-      // 驗證成功
-      Swal.fire({
-        icon: 'success',
-        title: '登入成功',
-        text: '歡迎進入盤點系統',
-        timer: 1500,
-        showConfirmButton: false
-      });
-      // 隱藏遮罩，允許操作網頁
+      Swal.fire({ icon: 'success', title: '登入成功', timer: 1500, showConfirmButton: false });
       document.getElementById('loginOverlay').style.display = 'none';
-      // 載入下拉選單並聚焦
       loadCompareOptions();
       qA.focus();
     } else {
-      // 驗證失敗 (不在白名單)
-      Swal.fire({
-        icon: 'error',
-        title: '權限不足',
-        text: '您不在白名單中，無權訪問此系統。',
-        confirmButtonText: '確定'
-      });
-      // 遮罩保留，不讓使用者進入
+      Swal.fire({ icon: 'error', title: '權限不足', text: '您不在白名單中，無權訪問。' });
     }
   } catch (error) {
-    Swal.fire({
-      icon: 'error',
-      title: '網路錯誤',
-      text: '無法連接到驗證伺服器，請稍後再試。',
-      confirmButtonText: '確定'
-    });
-    console.error("Auth API Error:", error);
+    Swal.fire({ icon: 'error', title: '網路錯誤', text: '無法連接驗證伺服器。' });
   }
 }
-
 
 /* ================= 工具：API 呼叫 ================= */
 async function callApi(action, params = null) {
@@ -329,8 +307,6 @@ async function callApi(action, params = null) {
       body: JSON.stringify({ action: action, params: params }),
       redirect: 'follow'
     });
-    
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return await response.json();
   } catch (e) {
     console.error("API Error:", e);
@@ -338,32 +314,20 @@ async function callApi(action, params = null) {
   }
 }
 
-/* ===== SweetAlert2 封裝取代舊的 Toast 和 Progress ===== */
 function showToast(msg, type='success'){
   Swal.fire({
-    toast: true,
-    position: 'top-end',
-    icon: type,
-    title: msg,
-    showConfirmButton: false,
-    timer: 2000,
-    timerProgressBar: true
+    toast: true, position: 'top-end', icon: type, title: msg,
+    showConfirmButton: false, timer: 2000, timerProgressBar: true
   });
 }
 
 function showProgress(msg = '處理中...'){
-  Swal.fire({
-    title: msg,
-    allowOutsideClick: false,
-    didOpen: () => { Swal.showLoading(); }
-  });
+  Swal.fire({ title: msg, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
 }
 
-function finishProgress(){
-  Swal.close();
-}
+function finishProgress(){ Swal.close(); }
 
-/* ===== DOM ===== */
+/* ===== DOM & 功能 ===== */
 const qA=document.getElementById('qA');
 const qB=document.getElementById('qB');
 const qI=document.getElementById('qI');
@@ -373,166 +337,74 @@ const btnQuery=document.getElementById('btnQuery');
 const resultCard=document.getElementById('resultCard');
 const resultBody=document.querySelector('#resultTable tbody');
 
-/* ===== 功能 ===== */
 function clearFormAndResult(){
   qA.value=''; qB.value=''; qI.value=''; qJ.value=''; qK.value='';
   resultBody.innerHTML=''; resultCard.style.display='none';
 }
 
-function _allEmpty(){
-  return ![qA,qB,qI,qJ].some(el => (el.value||'').trim()) && !(qK.value||'').trim();
+async function runQuery(){
+  if (![qA,qB,qI,qJ,qK].some(el => (el.value||'').trim())){
+    showToast('請輸入查詢條件', 'error'); return;
+  }
+  showProgress('資料查詢中...');
+  try {
+    const res = await callApi('searchAssets', {
+      A:qA.value.trim(), B:qB.value.trim(), I:qI.value.trim(), J:qJ.value.trim(), K:qK.value.trim()
+    });
+    renderRows(res?.rows || []);
+  } catch (err) { Swal.fire('查詢失敗', '連線異常', 'error'); }
+  finally { finishProgress(); }
 }
 
 function renderRows(rows){
   resultBody.innerHTML='';
-  if(!rows || rows.length===0){
-    resultCard.style.display='none';
-    showToast('沒有符合的資料', 'info');
-    return;
-  }
+  if(!rows.length){ resultCard.style.display='none'; showToast('沒有符合資料', 'info'); return; }
   rows.forEach(r=>{
     const tr=document.createElement('tr');
-    // 依序：A,B,C,F,G,H,I,J,K,L
     ['A','B','C','F','G','H','I','J','K','L'].forEach(k=>{
-      const td=document.createElement('td');
-      td.textContent=r[k]??'';
-      tr.appendChild(td);
+      const td=document.createElement('td'); td.textContent=r[k]??''; tr.appendChild(td);
     });
-
-    // 處理欄
     const tdAct=document.createElement('td');
     tdAct.innerHTML = `
-      <button class="btn-mini btn-pink"   onclick="doDiscard('${r.J}')">報廢</button>
+      <button class="btn-mini btn-pink" onclick="doDiscard('${r.J}')">報廢</button>
       <button class="btn-mini btn-yellow" onclick="undoDiscard('${r.J}')">取消</button>
     `;
     tr.appendChild(tdAct);
-
     resultBody.appendChild(tr);
   });
   resultCard.style.display='block';
 }
 
-/* 查詢功能 */
-async function runQuery(){
-  if (_allEmpty()){
-    showToast('請至少輸入／選擇一個查詢條件', 'error');
-    qA.focus();
-    return;
-  }
-
-  resultBody.innerHTML=''; resultCard.style.display='none';
-  showProgress('資料查詢中...'); 
-  btnQuery.disabled=true; btnQuery.style.opacity=.7;
-
-  const payload={
-    A:(qA.value||'').trim(),
-    B:(qB.value||'').trim(),
-    I:(qI.value||'').trim(),
-    J:(qJ.value||'').trim(),
-    K:(qK.value||'').trim()
-  };
-
-  try {
-    const res = await callApi('searchAssets', payload);
-    finishProgress();
-    renderRows(res && res.rows || []);
-  } catch (err) {
-    console.error(err);
-    finishProgress();
-    Swal.fire('查詢失敗', '請檢查網路連線或 GAS 權限設定', 'error');
-  } finally {
-    btnQuery.disabled=false; btnQuery.style.opacity=1;
-  }
-}
-
-/* ===== 事件 ===== */
-btnQuery.addEventListener('click', runQuery);
-document.getElementById('btnClear').addEventListener('click', ()=>{
-  clearFormAndResult(); 
-  showToast('已清除條件', 'success');
-});
-[qA,qB,qI,qJ].forEach(el=>{
-  el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); runQuery(); }});
-});
-
-/* 輔助：找行 */
-function _findRowByBarcode(barcode){
-  const rows = Array.from(resultBody.querySelectorAll('tr'));
-  return rows.find(tr => (tr.children[7]?.textContent || '') === barcode) || null;
-}
-
-/* 報廢功能 */
 async function doDiscard(barcode){
-  const tr=_findRowByBarcode(barcode);
-  if(!tr){ showToast('找不到該筆資料', 'error'); return; }
-  const kCell = tr.children[8]; 
-  const kVal  = (kCell.textContent||'').trim();
-
-  if(kVal === '1'){ showToast('此設備已進入報廢流程', 'info'); return; }
-
-  showProgress('正在標記報廢...');
-  
+  showProgress('處理中...');
   try {
-    const res = await callApi('markDiscard', { barcode: barcode }); // 明確傳遞物件
-    finishProgress();
-    if(res && res.ok){
-      tr.children[8].textContent = res.K ?? '1';
-      tr.children[9].textContent = res.L ?? '報廢';
-      showToast('已成功標記報廢', 'success');
-    } else if(res && res.already){
-      showToast('此設備已進入報廢流程', 'info');
-    } else {
-      Swal.fire('處理失敗', '後端伺服器回報錯誤', 'error');
-    }
-  } catch (err) {
-    console.error(err);
-    finishProgress();
-    Swal.fire('連線錯誤', '無法連接伺服器', 'error');
-  }
+    const res = await callApi('markDiscard', { barcode });
+    if(res?.ok) { showToast('已標記報廢'); runQuery(); }
+    else showToast('處理失敗', 'error');
+  } catch(e) { Swal.fire('錯誤', '連線失敗', 'error'); }
+  finally { finishProgress(); }
 }
 
-/* 取消報廢功能 */
 async function undoDiscard(barcode){
-  const tr=_findRowByBarcode(barcode);
-  if(!tr){ showToast('找不到該筆資料', 'error'); return; }
-  const kCell = tr.children[8];
-  const kVal  = (kCell.textContent||'').trim();
-
-  if(kVal === '0' || kVal === ''){ showToast('此設備目前沒有報廢', 'info'); return; }
-
-  showProgress('正在取消報廢...');
-  
+  showProgress('處理中...');
   try {
-    const res = await callApi('cancelDiscard', { barcode: barcode });
-    finishProgress();
-    if(res && res.ok){
-      tr.children[8].textContent = res.K ?? '0';
-      tr.children[9].textContent = res.L ?? '使用中';
-      showToast('已取消報廢', 'success');
-    } else if(res && res.notFound){
-      showToast('此設備目前沒有報廢', 'info');
-    } else {
-      Swal.fire('處理失敗', '後端伺服器回報錯誤', 'error');
-    }
-  } catch(err) {
-    console.error(err);
-    finishProgress();
-    Swal.fire('連線錯誤', '無法連接伺服器', 'error');
-  }
+    const res = await callApi('cancelDiscard', { barcode });
+    if(res?.ok) { showToast('已取消報廢'); runQuery(); }
+    else showToast('處理失敗', 'error');
+  } catch(e) { Swal.fire('錯誤', '連線失敗', 'error'); }
+  finally { finishProgress(); }
 }
 
-/* 初始化：載入下拉 */
 async function loadCompareOptions(){
   try {
     const res = await callApi('getCompareOptions');
-    const list=(res && res.options)||[];
-    qK.innerHTML='<option value=""></option>' + list.map(v=>`<option value="${v}">${v}</option>`).join('');
-  } catch(e) {
-    console.log("載入下拉失敗，忽略", e);
-  }
+    qK.innerHTML='<option value=""></option>' + (res?.options||[]).map(v=>`<option value="${v}">${v}</option>`).join('');
+  } catch(e) {}
 }
 
-// 註：window.onload 現在移除自動執行 loadCompareOptions，改為登入成功後才執行
+btnQuery.addEventListener('click', runQuery);
+document.getElementById('btnClear').addEventListener('click', clearFormAndResult);
+[qA,qB,qI,qJ].forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')runQuery();}));
 </script>
 </body>
 </html>
