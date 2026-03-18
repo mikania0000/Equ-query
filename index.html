@@ -4,6 +4,11 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <title>盤點清冊查詢系統</title>
+<!-- 引入 Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<!-- 引入 SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <style>
   body{
     font-family:"微軟正黑體",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
@@ -100,6 +105,35 @@
   .table col.col-k { width: 90px;  }
   .table col.col-l { width: 100px; }
 
+  /* ===== 登入遮罩 ===== */
+  #loginOverlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 99999; /* 最上層 */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .login-box {
+    background: #fff;
+    padding: 40px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    text-align: center;
+  }
+  .login-box h2 {
+    margin-top: 0;
+    color: #1565c0;
+    margin-bottom: 10px;
+  }
+  .login-box p {
+    color: #555;
+    margin-bottom: 24px;
+  }
+
   /* 手機 RWD */
   @media (max-width: 1000px){
     .container{ padding-left: 10px; padding-right: 10px; border-radius: 0; }
@@ -110,42 +144,40 @@
     .result-wrap{ overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .table{ min-width: 980px; }
   }
-
-  /* ===== 浮動訊息 ===== */
-  .toast{
-    position:fixed; left:50%; top:60%; transform:translate(-50%,-50%);
-    padding:12px 18px; font-size:26px; color:#fff; border-radius:16px;
-    z-index:9999; opacity:0; pointer-events:none; animation:fadeInOut 3s ease forwards;
-    white-space:nowrap;
-  }
-  .toast.success{ background:#2e7d32; }
-  .toast.error{ background:#c62828; }
-  .toast.info{ background:#1565c0; }
-  @keyframes fadeInOut{
-    0%{opacity:0;transform:translate(-50%,-6px);}
-    10%{opacity:1;transform:translate(-50%,0);}
-    80%{opacity:1;}
-    100%{opacity:0;transform:translate(-50%,-6px);}
-  }
-
-  /* ===== 查詢中百分比 ===== */
-  .progress-toast{
-    position:fixed; left:50%; top:18%; transform:translateX(-50%);
-    min-width:320px; background:#0d47a1; color:#fff; border-radius:16px; padding:14px 18px;
-    z-index:10000; box-shadow:0 10px 24px rgba(0,0,0,.18); text-align:center; white-space:nowrap;
-  }
-  .progress-msg{ font-size:26px; line-height:1.25; }
-
   @media (max-width:900px){
     .container{ padding:16px; border-radius:12px; }
     h1{ font-size:32px; }
     .form{ grid-template-columns:110px 1fr; width:100%; }
     .in{ width:100%; font-size:20px; height:46px; }
-    .progress-msg{ font-size:22px; }
   }
 </style>
 </head>
 <body>
+
+<!-- 登入遮罩 -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <h2>盤點系統登入</h2>
+    <p>請使用有權限的 Google 帳號登入系統</p>
+    <!-- Google 登入按鈕容器 -->
+    <div id="g_id_onload"
+         data-client_id="YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com"
+         data-context="signin"
+         data-ux_mode="popup"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false">
+    </div>
+    <div class="g_id_signin"
+         data-type="standard"
+         data-shape="rectangular"
+         data-theme="outline"
+         data-text="signin_with"
+         data-size="large"
+         data-logo_alignment="left">
+    </div>
+  </div>
+</div>
+
 <div class="main-wrapper">
   <div class="container">
     <h1>盤點清冊查詢系統</h1>
@@ -211,67 +243,125 @@
 
 <script>
 /* ================= 設定區 ================= */
-// 請確認此網址與您的 Google Apps Script 網頁應用程式網址一致
-// 1. 確保部署類型為「網頁應用程式 (Web App)」
-// 2. 確保「擁有存取權的人 (Who has access)」設定為「所有人 (Anyone)」
-const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz9Il_sTz9LeC-eq3rWmP21FxmrpOlx0JFOLl8H--y5JWJQF4YEESjqUqk0V5QFLNGiXA/exec';
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com'; // ★ 請填入你的 Client ID
+const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbz9Il_sTz9LeC-eq3rWmP21FxmrpOlx0JFOLl8H--y5JWJQF4YEESjqUqk0V5QFLNGiXA/exec'; // 原本查詢的 API
+const AUTH_API_URL = 'https://script.google.com/macros/s/AKfycbxBnPl_7XPedBwlk4pL3jYHwXteRd2SNegY24QLp6jGVvxCQDgRTXTu1XhF2rcaGh_mIw/exec'; // 驗證白名單的 API
+
+/* ================= 雙認證與白名單邏輯 ================= */
+// 1. 解析 Google 回傳的 JWT Token 以取得 Email
+function decodeJwtResponse(token) {
+  let base64Url = token.split('.')[1];
+  let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  let jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+  }).join(''));
+  return JSON.parse(jsonPayload);
+}
+
+// 2. Google 登入完成後的回呼函式
+async function handleCredentialResponse(response) {
+  const responsePayload = decodeJwtResponse(response.credential);
+  const userEmail = responsePayload.email;
+
+  // 顯示驗證中的 SweetAlert2 動畫
+  Swal.fire({
+    title: '身分驗證中',
+    text: `正在驗證 ${userEmail} 是否具有權限...`,
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
+
+  try {
+    const authRes = await fetch(AUTH_API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: "verifyLogin", email: userEmail }),
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      redirect: 'follow'
+    });
+
+    if (!authRes.ok) throw new Error("驗證伺服器無回應");
+    
+    const data = await authRes.json();
+
+    if (data.status === 'success' && data.authorized === true) {
+      // 驗證成功
+      Swal.fire({
+        icon: 'success',
+        title: '登入成功',
+        text: '歡迎進入盤點系統',
+        timer: 1500,
+        showConfirmButton: false
+      });
+      // 隱藏遮罩，允許操作網頁
+      document.getElementById('loginOverlay').style.display = 'none';
+      // 載入下拉選單並聚焦
+      loadCompareOptions();
+      qA.focus();
+    } else {
+      // 驗證失敗 (不在白名單)
+      Swal.fire({
+        icon: 'error',
+        title: '權限不足',
+        text: '您不在白名單中，無權訪問此系統。',
+        confirmButtonText: '確定'
+      });
+      // 遮罩保留，不讓使用者進入
+    }
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: '網路錯誤',
+      text: '無法連接到驗證伺服器，請稍後再試。',
+      confirmButtonText: '確定'
+    });
+    console.error("Auth API Error:", error);
+  }
+}
+
 
 /* ================= 工具：API 呼叫 ================= */
-// 取代原本的 google.script.run，改用 fetch
 async function callApi(action, params = null) {
   try {
-    // 使用 fetch 發送 POST 請求
-    // 【重要修正】移除 headers 設定。
-    // 當 body 是字串時，瀏覽器預設會使用 text/plain，這對 GAS 來說最安全，
-    // 可以避免因為 Content-Type: application/json 或自訂 charset 而觸發 CORS Preflight (OPTIONS) 失敗。
     const response = await fetch(GAS_API_URL, {
       method: 'POST',
       body: JSON.stringify({ action: action, params: params }),
-      // redirect: 'follow' 是預設值，但明確寫出來有助於理解 GAS 的轉址行為
       redirect: 'follow'
     });
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    return data;
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
   } catch (e) {
     console.error("API Error:", e);
     throw e;
   }
 }
 
-/* ===== 浮動訊息 ===== */
-function showToast(msg, type='success', ms=3000){
-  const t=document.createElement('div');
-  t.className=`toast ${type}`; t.textContent=msg;
-  document.body.appendChild(t); setTimeout(()=>t.remove(), ms);
+/* ===== SweetAlert2 封裝取代舊的 Toast 和 Progress ===== */
+function showToast(msg, type='success'){
+  Swal.fire({
+    toast: true,
+    position: 'top-end',
+    icon: type,
+    title: msg,
+    showConfirmButton: false,
+    timer: 2000,
+    timerProgressBar: true
+  });
 }
 
-/* ===== 純文字百分比 ===== */
-let _progressEl=null, _progressTimer=null, _progressPct=0;
-function _ensureProgressEl(){
-  if (_progressEl) return _progressEl;
-  const box=document.createElement('div');
-  box.className='progress-toast';
-  box.innerHTML=`<div class="progress-msg" id="progressText">查詢中…請稍後 0%</div>`;
-  document.body.appendChild(box); _progressEl=box; return box;
+function showProgress(msg = '處理中...'){
+  Swal.fire({
+    title: msg,
+    allowOutsideClick: false,
+    didOpen: () => { Swal.showLoading(); }
+  });
 }
-function _setProgress(p){ const el=_ensureProgressEl().querySelector('#progressText'); if(el) el.textContent=`查詢中…請稍後 ${p}%`; }
-function showProgress(startPct=0){
-  _ensureProgressEl(); _progressPct=Math.max(0,Math.min(100,startPct|0));
-  _setProgress(_progressPct); _progressEl.style.display='block';
-  if(_progressTimer) clearInterval(_progressTimer);
-  _progressTimer=setInterval(()=>{ if(_progressPct>=95) return;
-    const step=Math.floor(Math.random()*2)+7; _progressPct=Math.min(95,_progressPct+step); _setProgress(_progressPct);
-  },180);
+
+function finishProgress(){
+  Swal.close();
 }
-function finishProgress(){ if(_progressTimer){clearInterval(_progressTimer); _progressTimer=null;}
-  if(!_progressEl) return; _progressPct=100; _setProgress(_progressPct); setTimeout(()=>{_progressEl.style.display='none';},500);
-}
-function hideProgressNow(){ if(_progressTimer){clearInterval(_progressTimer); _progressTimer=null;} if(_progressEl) _progressEl.style.display='none'; }
 
 /* ===== DOM ===== */
 const qA=document.getElementById('qA');
@@ -297,7 +387,7 @@ function renderRows(rows){
   resultBody.innerHTML='';
   if(!rows || rows.length===0){
     resultCard.style.display='none';
-    showToast('沒有符合的資料', 'info', 1800);
+    showToast('沒有符合的資料', 'info');
     return;
   }
   rows.forEach(r=>{
@@ -322,16 +412,17 @@ function renderRows(rows){
   resultCard.style.display='block';
 }
 
-/* 查詢功能 (改用 callApi) */
+/* 查詢功能 */
 async function runQuery(){
   if (_allEmpty()){
-    showToast('⛔ 請至少輸入／選擇一個查詢條件', 'error', 2200);
+    showToast('請至少輸入／選擇一個查詢條件', 'error');
     qA.focus();
     return;
   }
 
   resultBody.innerHTML=''; resultCard.style.display='none';
-  showProgress(0); btnQuery.disabled=true; btnQuery.style.opacity=.7;
+  showProgress('資料查詢中...'); 
+  btnQuery.disabled=true; btnQuery.style.opacity=.7;
 
   const payload={
     A:(qA.value||'').trim(),
@@ -348,8 +439,7 @@ async function runQuery(){
   } catch (err) {
     console.error(err);
     finishProgress();
-    // 顯示更詳細的錯誤建議
-    showToast('查詢失敗：請檢查網路或 GAS 部署權限 (所有人)', 'error', 3000);
+    Swal.fire('查詢失敗', '請檢查網路連線或 GAS 權限設定', 'error');
   } finally {
     btnQuery.disabled=false; btnQuery.style.opacity=1;
   }
@@ -358,7 +448,8 @@ async function runQuery(){
 /* ===== 事件 ===== */
 btnQuery.addEventListener('click', runQuery);
 document.getElementById('btnClear').addEventListener('click', ()=>{
-  hideProgressNow(); clearFormAndResult(); showToast('🧹 已清除', 'success', 1500);
+  clearFormAndResult(); 
+  showToast('已清除條件', 'success');
 });
 [qA,qB,qI,qJ].forEach(el=>{
   el.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); runQuery(); }});
@@ -367,71 +458,70 @@ document.getElementById('btnClear').addEventListener('click', ()=>{
 /* 輔助：找行 */
 function _findRowByBarcode(barcode){
   const rows = Array.from(resultBody.querySelectorAll('tr'));
-  // 顯示欄序：0:A ... 7:J(條碼) 8:K(比對) 9:L(狀態)
   return rows.find(tr => (tr.children[7]?.textContent || '') === barcode) || null;
 }
 
-/* 報廢功能 (改用 callApi) */
+/* 報廢功能 */
 async function doDiscard(barcode){
   const tr=_findRowByBarcode(barcode);
-  if(!tr){ showToast('找不到該筆資料', 'error', 1800); return; }
+  if(!tr){ showToast('找不到該筆資料', 'error'); return; }
   const kCell = tr.children[8]; 
   const kVal  = (kCell.textContent||'').trim();
 
-  if(kVal === '1'){ showToast('已進入報廢', 'info', 1800); return; }
+  if(kVal === '1'){ showToast('此設備已進入報廢流程', 'info'); return; }
 
-  showProgress(0);
+  showProgress('正在標記報廢...');
   
   try {
-    const res = await callApi('markDiscard', barcode);
+    const res = await callApi('markDiscard', { barcode: barcode }); // 明確傳遞物件
     finishProgress();
     if(res && res.ok){
       tr.children[8].textContent = res.K ?? '1';
       tr.children[9].textContent = res.L ?? '報廢';
-      showToast('📌 已標記報廢', 'success', 1600);
+      showToast('已成功標記報廢', 'success');
     } else if(res && res.already){
-      showToast('已進入報廢', 'info', 1800);
+      showToast('此設備已進入報廢流程', 'info');
     } else {
-      showToast('處理失敗', 'error', 2000);
+      Swal.fire('處理失敗', '後端伺服器回報錯誤', 'error');
     }
   } catch (err) {
     console.error(err);
     finishProgress();
-    showToast('連線錯誤', 'error', 2000);
+    Swal.fire('連線錯誤', '無法連接伺服器', 'error');
   }
 }
 
-/* 取消報廢功能 (改用 callApi) */
+/* 取消報廢功能 */
 async function undoDiscard(barcode){
   const tr=_findRowByBarcode(barcode);
-  if(!tr){ showToast('找不到該筆資料', 'error', 1800); return; }
+  if(!tr){ showToast('找不到該筆資料', 'error'); return; }
   const kCell = tr.children[8];
   const kVal  = (kCell.textContent||'').trim();
 
-  if(kVal === '0' || kVal === ''){ showToast('此設備沒有報廢', 'info', 1800); return; }
+  if(kVal === '0' || kVal === ''){ showToast('此設備目前沒有報廢', 'info'); return; }
 
-  showProgress(0);
+  showProgress('正在取消報廢...');
   
   try {
-    const res = await callApi('cancelDiscard', barcode);
+    const res = await callApi('cancelDiscard', { barcode: barcode });
     finishProgress();
     if(res && res.ok){
       tr.children[8].textContent = res.K ?? '0';
       tr.children[9].textContent = res.L ?? '使用中';
-      showToast('↩️ 已取消報廢', 'success', 1600);
+      showToast('已取消報廢', 'success');
     } else if(res && res.notFound){
-      showToast('此設備沒有報廢', 'info', 1800);
+      showToast('此設備目前沒有報廢', 'info');
     } else {
-      showToast('處理失敗', 'error', 2000);
+      Swal.fire('處理失敗', '後端伺服器回報錯誤', 'error');
     }
   } catch(err) {
     console.error(err);
     finishProgress();
-    showToast('連線錯誤', 'error', 2000);
+    Swal.fire('連線錯誤', '無法連接伺服器', 'error');
   }
 }
 
-/* 初始化：載入下拉 (改用 callApi) */
+/* 初始化：載入下拉 */
 async function loadCompareOptions(){
   try {
     const res = await callApi('getCompareOptions');
@@ -439,11 +529,10 @@ async function loadCompareOptions(){
     qK.innerHTML='<option value=""></option>' + list.map(v=>`<option value="${v}">${v}</option>`).join('');
   } catch(e) {
     console.log("載入下拉失敗，忽略", e);
-    // 這裡我們不彈出錯誤，避免一開畫面就報錯，只在 Console 留紀錄
   }
 }
 
-window.addEventListener('load', ()=>{ loadCompareOptions(); qA.focus(); });
+// 註：window.onload 現在移除自動執行 loadCompareOptions，改為登入成功後才執行
 </script>
 </body>
 </html>
