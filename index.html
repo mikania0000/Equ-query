@@ -517,16 +517,16 @@ function renderRows(rows) {
     // 判斷是否已經報廢 (利用 K 欄數值或 L 欄文字判斷)
     const isDiscarded = (r.K === '1' || r.K === 1 || (r.L && r.L.includes('報廢')));
 
-    if (isDiscarded) {
-      tdAct.innerHTML = `
-        <span style="color:#c62828; font-size:14px; font-weight:bold; display:block; margin-bottom:6px;">已報廢，<br>無需再處理</span>
-        <button class="btn-mini btn-yellow" onclick="doAction('${r.J}', 'cancelDiscard')">取消</button>
-      `;
-    } else {
-      tdAct.innerHTML = `
-        <button class="btn-mini btn-pink" onclick="doAction('${r.J}', 'markDiscard')">報廢</button>
-      `;
-    }
+    // 根據狀態決定按鈕是否失能 (disabled)
+    const btnDiscard = isDiscarded 
+      ? `<button class="btn-mini" style="background:#cfd8dc; color:#78909c; cursor:not-allowed; box-shadow:none;" disabled>報廢</button>`
+      : `<button class="btn-mini btn-pink" onclick="doAction('${r.J}', 'markDiscard')">報廢</button>`;
+      
+    const btnCancel = !isDiscarded
+      ? `<button class="btn-mini" style="background:#cfd8dc; color:#78909c; cursor:not-allowed; box-shadow:none;" disabled>取消</button>`
+      : `<button class="btn-mini btn-yellow" onclick="doAction('${r.J}', 'cancelDiscard')">取消</button>`;
+
+    tdAct.innerHTML = btnDiscard + btnCancel;
     
     tr.appendChild(tdAct);
     tbody.appendChild(tr);
